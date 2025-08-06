@@ -1,0 +1,22 @@
+Job Title: GenAI RAG Engineer
+
+Overview  
+We are seeking a software engineer to build and maintain retrieval augmented generation (RAG) services that power our customer success products. You will collaborate with product managers, data scientists, and sales engineers to deliver low-latency, accurate GenAI features.
+
+Responsibilities  
+- Design and implement RAG pipelines using Python, FastAPI, and Hugging Face sentence-transformer models.  
+- Embed customer documents into pgvector or Pinecone and optimize k-NN search.  
+- Integrate GPT-4o function calling to produce cited answers.  
+- Deploy and monitor services in Microsoft Azure with Docker and CI/CD.  
+- Present technical demos to enterprise clients and gather feedback.
+
+Required Skills  
+- 5+ years professional software engineering experience.  
+- Strong Python skills plus experience with Java or similar back-end language.  
+- Hands-on with LangChain, Transformers, or comparable GenAI frameworks.  
+- Familiarity with PostgreSQL, pgvector, and Azure Container Apps.  
+- Excellent written and verbal communication.
+
+Nice to Have  
+- Background with Salesforce integrations.  
+- Experience mentoring junior engineers or leading code reviews.

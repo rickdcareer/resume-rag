@@ -1,0 +1,27 @@
+{
+  "database": {
+    "url": "sqlite:///./resume_rag.db"
+  },
+  "openai": {
+    "model": "gpt-4o",
+    "temperature": 0.7,
+    "max_tokens": 1000,
+    "timeout": 30
+  },
+  "embedding": {
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimension": 384
+  },
+  "processing": {
+    "chunk_max_words": 200,
+    "retrieval_limit": 12
+  },
+  "api": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "max_upload_size": 10485760
+  },
+  "logging": {
+    "level": "INFO"
+  }
+}

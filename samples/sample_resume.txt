@@ -1,0 +1,42 @@
+Tom Reynolds
+San Francisco, CA  
+tomreynolds5395@gmail.com • 555-555-5555
+
+SUMMARY  
+Full-stack developer and technical account manager with 12 years of experience delivering cloud software, Salesforce customizations, and more recently GenAI prototypes. Strong communicator who bridges engineering and business goals.
+
+CORE TECHNICAL SKILLS  
+• Languages: Java, Python, Apex, JavaScript  
+• GenAI: LangChain, Hugging Face Transformers, OpenAI GPT-4o, pgvector  
+• Databases: PostgreSQL, MySQL, Snowflake  
+• Cloud: Azure, AWS, Heroku  
+• DevOps: GitHub Actions, Docker, Podman, Terraform  
+
+PROFESSIONAL EXPERIENCE  
+
+**Solutions Engineer – Acme Analytics**  
+Dallas, TX • 2023 – Present  
+- Designed a retrieval augmented generation (RAG) micro-service using FastAPI, MiniLM embeddings, and GPT-4o that reduced customer support search time by 68 percent.  
+- Deployed service to Azure Container Apps with CI/CD and Terraform.  
+- Collaborated with sales to demo GenAI capabilities to 15 enterprise prospects.
+
+**Senior Salesforce Developer – Consulting & Co.**  
+Remote • 2019 – 2023  
+- Built Apex triggers and Lightning components supporting a 1.4 million-record org.  
+- Integrated Salesforce with external REST services via Azure Functions.  
+- Mentored five junior developers and ran weekly solution design reviews.
+
+**Restaurant Manager – Sunrise Bistro**  
+Sacramento, CA • 2015 – 2018  
+- Managed daily operations and a team of 18 staff while implementing a POS upgrade.  
+- Improved table turnover by 22 percent through new workflow policies.
+
+EDUCATION  
+B.S. Computer Science, University of California, Davis
+
+CERTIFICATIONS  
+• Salesforce Platform Developer I  
+• Microsoft Azure Fundamentals  
+
+VOLUNTEER  
+Sacramento Code for Good – taught Python basics to high-school students

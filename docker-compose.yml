@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    environment:
+      - DB_URL=postgresql://postgres:postgres@db:5432/resume_rag
+    depends_on:
+      - db
+    ports:
+      - "8000:80"
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: resume_rag
+    command: postgres -c 'shared_preload_libraries=pgvector'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
