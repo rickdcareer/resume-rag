@@ -1,5 +1,7 @@
 # Resume RAG API
 
+Note: This is code I have open-sourced related to a commercial project that I am working on. I am happy to talk more about that project as well the code for that is not open source. I am currently seeking employment and also open to talking to potential partners or investors. Please reach out if you want to get in touch: rickdcareer458@gmail.com
+
 A **working Resume RAG (Retrieval Augmented Generation) API** that intelligently tailors resumes to job descriptions using local embeddings and OpenAI GPT-4o.
 
 ## 🎯 What It Does
