@@ -13,18 +13,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 def clean_text(text: str) -> str:
-    """Clean and normalize resume text."""
-    # Remove extra whitespace and normalize line breaks
-    text = re.sub(r'\s+', ' ', text.strip())
-    # Remove special characters but keep basic punctuation
-    text = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)]', ' ', text)
-    # Remove extra spaces
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
+    """Clean and normalize resume text while preserving structure."""
+    # Replace multiple whitespace with single spaces, but preserve line breaks for now
+    text = re.sub(r'[ \t]+', ' ', text)  # Only compress spaces/tabs, not newlines
+    text = re.sub(r'\n+', '\n', text)     # Compress multiple newlines to single
+    
+    # Remove special characters but keep basic punctuation and preserve periods
+    text = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\n@]', ' ', text)
+    
+    # Clean up extra spaces again
+    text = re.sub(r' +', ' ', text)
+    text = text.strip()
+    
+    return text
 
 def chunk_resume_text(text: str, max_chunk_size: int = None) -> List[str]:
     """
-    Split resume text into chunks for embedding.
+    Split resume text into chunks for embedding, preserving resume structure.
     
     Args:
         text: Resume text to chunk
@@ -33,43 +38,88 @@ def chunk_resume_text(text: str, max_chunk_size: int = None) -> List[str]:
     Returns:
         List of text chunks
     """
+    logger.info(f"🔧 CHUNKING: Starting chunk_resume_text with {len(text)} chars input")
+    
     # Use config default if not specified
     if max_chunk_size is None:
         max_chunk_size = config.CHUNK_MAX_WORDS
     
-    # Clean the text first
+    logger.info(f"🔧 CHUNKING: Using max_chunk_size = {max_chunk_size}")
+    
+    # Clean the text first (preserves structure)
     cleaned_text = clean_text(text)
+    logger.info(f"🔧 CHUNKING: After cleaning: {len(cleaned_text)} chars")
+    logger.info(f"🔧 CHUNKING: Cleaned text preview: {repr(cleaned_text[:200])}")
     
-    # Split by sentences first, then group into chunks
-    sentences = re.split(r'[.!?]+', cleaned_text)
+    # Try to split by major sections first (based on common resume structure)
+    # Look for section headers like EXPERIENCE, EDUCATION, SKILLS, etc.
+    section_pattern = r'\n(?=[A-Z][A-Z\s]{3,})\n*'
+    sections = re.split(section_pattern, cleaned_text)
+    
+    logger.info(f"🔧 CHUNKING: Split into {len(sections)} sections")
+    for i, section in enumerate(sections):
+        logger.info(f"🔧 CHUNKING: Section {i+1}: {len(section)} chars, preview: {repr(section[:100])}")
+    
     chunks = []
-    current_chunk = []
-    current_word_count = 0
     
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if not sentence:
+    for section in sections:
+        section = section.strip()
+        if not section:
             continue
             
-        word_count = len(sentence.split())
+        # Count words in this section
+        section_words = len(section.split())
         
-        # If adding this sentence would exceed the limit, save current chunk
-        if current_word_count + word_count > max_chunk_size and current_chunk:
-            chunks.append(' '.join(current_chunk).strip())
-            current_chunk = [sentence]
-            current_word_count = word_count
+        if section_words <= max_chunk_size:
+            # Section fits in one chunk
+            if section_words >= 10:  # Only keep chunks with enough content
+                chunks.append(section)
         else:
-            current_chunk.append(sentence)
-            current_word_count += word_count
+            # Section too large, split by sentences and/or line breaks
+            # Split by periods, exclamation marks, question marks, or double newlines
+            sentences = re.split(r'[.!?]+|\n\n+', section)
+            
+            current_chunk = []
+            current_word_count = 0
+            
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if not sentence:
+                    continue
+                    
+                word_count = len(sentence.split())
+                
+                # If adding this sentence would exceed the limit, save current chunk
+                if current_word_count + word_count > max_chunk_size and current_chunk:
+                    chunk_text = ' '.join(current_chunk).strip()
+                    if len(chunk_text.split()) >= 10:  # Only keep substantial chunks
+                        chunks.append(chunk_text)
+                    current_chunk = [sentence]
+                    current_word_count = word_count
+                else:
+                    current_chunk.append(sentence)
+                    current_word_count += word_count
+            
+            # Add the last chunk if it has content
+            if current_chunk:
+                chunk_text = ' '.join(current_chunk).strip()
+                if len(chunk_text.split()) >= 10:
+                    chunks.append(chunk_text)
     
-    # Add the last chunk if it has content
-    if current_chunk:
-        chunks.append(' '.join(current_chunk).strip())
+    # If no good chunks found, fall back to simple word-based chunking
+    if not chunks:
+        words = cleaned_text.split()
+        for i in range(0, len(words), max_chunk_size):
+            chunk_words = words[i:i + max_chunk_size]
+            if len(chunk_words) >= 10:
+                chunks.append(' '.join(chunk_words))
     
-    # Filter out very short chunks (less than 10 words)
-    chunks = [chunk for chunk in chunks if len(chunk.split()) >= 10]
+    logger.info(f"🔧 CHUNKING: FINAL RESULT: {len(chunks)} chunks created")
+    for i, chunk in enumerate(chunks):
+        logger.info(f"🔧 CHUNKING: Final chunk {i+1}: {len(chunk)} chars, {len(chunk.split())} words")
+        logger.info(f"🔧 CHUNKING: Final chunk {i+1} preview: {repr(chunk[:150])}")
     
-    logger.info(f"Split text into {len(chunks)} chunks")
+    logger.info(f"Split text into {len(chunks)} chunks (avg {sum(len(c.split()) for c in chunks) // len(chunks) if chunks else 0} words per chunk)")
     return chunks
 
 def ingest_resume(resume_text: str, db: Session = None) -> int:

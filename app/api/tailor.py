@@ -24,12 +24,18 @@ class TailorRequest(BaseModel):
     style: Optional[str] = Field("professional", description="Writing style", pattern="^(professional|concise|impact)$")
     retrieval_limit: Optional[int] = Field(12, description="Maximum chunks to retrieve", ge=1, le=50)
 
+class CitedChunk(BaseModel):
+    """Model for a cited chunk with details."""
+    id: int
+    text: str
+    distance: float
+
 class TailorResponse(BaseModel):
     """Response model for resume tailoring."""
     
     resume_id: int
     tailored_bullets: list[str]
-    cited_chunks: list[int]
+    cited_chunks: list[CitedChunk]
     chunk_count: int
     metadata: Dict[str, Any]
     
@@ -100,11 +106,22 @@ async def tailor_resume(
         
         logger.info(f"Generated {len(generation_result.tailored_bullets)} bullets")
         
-        # 4. Prepare response with complete metadata
+        # 4. Convert cited chunk indices to actual chunk information
+        cited_chunk_details = []
+        for chunk_index in generation_result.cited_chunks:
+            if 0 <= chunk_index < len(relevant_chunks):
+                chunk = relevant_chunks[chunk_index]
+                cited_chunk_details.append(CitedChunk(
+                    id=chunk.chunk_id,
+                    text=chunk.chunk_text,
+                    distance=chunk.distance
+                ))
+        
+        # 5. Prepare response with complete metadata
         response = TailorResponse(
             resume_id=request.resume_id,
             tailored_bullets=generation_result.tailored_bullets,
-            cited_chunks=generation_result.cited_chunks,
+            cited_chunks=cited_chunk_details,
             chunk_count=len(relevant_chunks),
             metadata={
                 **generation_result.metadata,

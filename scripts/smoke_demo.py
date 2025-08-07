@@ -189,7 +189,9 @@ CITED RESUME CHUNKS:
 {'-'*40}
 """
     
-    for i, chunk in enumerate(cited_chunks, 1):
+    # Deduplicate chunks by ID to avoid repetition
+    seen_chunks = {}
+    for chunk in cited_chunks:
         # Handle both dict format and integer format
         if isinstance(chunk, dict):
             chunk_id = chunk.get("id")
@@ -199,6 +201,12 @@ CITED RESUME CHUNKS:
             chunk_id = chunk
             chunk_text = f"Chunk {chunk_id} (referenced)"
         
+        # Only add if we haven't seen this chunk ID before
+        if chunk_id not in seen_chunks:
+            seen_chunks[chunk_id] = chunk_text
+    
+    # Write deduplicated chunks
+    for chunk_id, chunk_text in seen_chunks.items():
         output_content += f"[Chunk {chunk_id}]: {chunk_text}\n\n"
     
     output_content += f"""
@@ -232,9 +240,10 @@ def display_results(results: Dict[str, Any]):
         print(f"{i}. {bullet}")
     
     print_section("CITED RESUME CHUNKS")
-    print(f"\n📚 {len(cited_chunks)} chunks were cited:\n")
     
-    for i, chunk in enumerate(cited_chunks, 1):
+    # Deduplicate chunks by ID for display
+    seen_chunks = {}
+    for chunk in cited_chunks:
         # Handle both dict format and integer format
         if isinstance(chunk, dict):
             chunk_id = chunk.get("id")
@@ -244,6 +253,13 @@ def display_results(results: Dict[str, Any]):
             chunk_id = chunk
             chunk_text = f"Chunk {chunk_id} (referenced)"
         
+        # Only add if we haven't seen this chunk ID before
+        if chunk_id not in seen_chunks:
+            seen_chunks[chunk_id] = chunk_text
+    
+    print(f"\n📚 {len(seen_chunks)} unique chunks were cited:\n")
+    
+    for i, (chunk_id, chunk_text) in enumerate(seen_chunks.items(), 1):
         # Truncate long chunks for display
         display_text = chunk_text[:200] + "..." if len(chunk_text) > 200 else chunk_text
         print(f"{i}. [Chunk {chunk_id}]: {display_text}")

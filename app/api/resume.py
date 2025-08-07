@@ -128,8 +128,13 @@ async def upload_resume(
         # Extract text content from uploaded file
         resume_text = process_uploaded_file(file)
         
+        logger.info(f"🚀 API UPLOAD: Extracted text length: {len(resume_text)} chars")
+        logger.info(f"🚀 API UPLOAD: Text preview: {repr(resume_text[:200])}")
+        
         # Ingest the resume using our ingestion service
+        logger.info(f"🚀 API UPLOAD: Calling ingest_resume...")
         resume_id = ingest_resume(resume_text, db)
+        logger.info(f"🚀 API UPLOAD: ingest_resume returned ID: {resume_id}")
         
         # Get some stats for the response
         from app.models.tables import Resume, ResumeChunk

@@ -57,6 +57,7 @@ class Config:
         self._set_openai_config(config_data)
         self._set_embedding_config(config_data)
         self._set_processing_config(config_data)
+        self._set_retrieval_config(config_data)
         self._set_api_config(config_data)
         self._set_logging_config(config_data)
     
@@ -67,6 +68,7 @@ class Config:
             "openai": {"model": "gpt-4o", "temperature": 0.7, "max_tokens": 1000, "timeout": 30},
             "embedding": {"model": "sentence-transformers/all-MiniLM-L6-v2", "dimension": 384},
             "processing": {"chunk_max_words": 200, "retrieval_limit": 12},
+            "retrieval": {"similarity_metric": "cosine", "distance_threshold": 0.5},
             "api": {"host": "127.0.0.1", "port": 8000, "max_upload_size": 10485760},
             "logging": {"level": "INFO"}
         }
@@ -102,6 +104,13 @@ class Config:
         
         self.CHUNK_MAX_WORDS = int(os.getenv("CHUNK_MAX_WORDS", str(processing_config.get("chunk_max_words", 200))))
         self.RETRIEVAL_LIMIT = int(os.getenv("RETRIEVAL_LIMIT", str(processing_config.get("retrieval_limit", 12))))
+    
+    def _set_retrieval_config(self, config_data: Dict[str, Any]):
+        """Set retrieval/similarity configuration."""
+        retrieval_config = config_data.get("retrieval", {})
+        
+        self.SIMILARITY_METRIC = os.getenv("SIMILARITY_METRIC", retrieval_config.get("similarity_metric", "cosine"))
+        self.DISTANCE_THRESHOLD = float(os.getenv("DISTANCE_THRESHOLD", str(retrieval_config.get("distance_threshold", 0.5))))
     
     def _set_api_config(self, config_data: Dict[str, Any]):
         """Set API configuration."""
@@ -145,6 +154,8 @@ class Config:
         print(f"   Embedding Dimension: {self.EMBEDDING_DIM}")
         print(f"   Chunk Size: {self.CHUNK_MAX_WORDS} words")
         print(f"   Retrieval Limit: {self.RETRIEVAL_LIMIT} chunks")
+        print(f"   Similarity Metric: {self.SIMILARITY_METRIC}")
+        print(f"   Distance Threshold: {self.DISTANCE_THRESHOLD}")
         print(f"   API: {self.API_HOST}:{self.API_PORT}")
         print(f"   Log Level: {self.LOG_LEVEL}")
         api_key_status = "✅ Set" if self.OPENAI_API_KEY else "❌ Missing"

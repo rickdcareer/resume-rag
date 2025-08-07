@@ -41,7 +41,7 @@ def retrieve_relevant_chunks(
     job_description: str,
     resume_id: Optional[int] = None,
     limit: int = None,
-    distance_threshold: float = 1.0,
+    distance_threshold: float = None,
     db: Session = None
 ) -> List[RetrievalResult]:
     """
@@ -51,7 +51,7 @@ def retrieve_relevant_chunks(
         job_description: The job description text to search against
         resume_id: Optional specific resume ID to search within (None = search all)
         limit: Maximum number of chunks to return (uses config.RETRIEVAL_LIMIT if None)
-        distance_threshold: Maximum distance for results (default: 1.0)
+        distance_threshold: Maximum distance for results (uses config.DISTANCE_THRESHOLD if None)
         db: Database session (will create if not provided)
         
     Returns:
@@ -68,9 +68,11 @@ def retrieve_relevant_chunks(
         close_db = False
     
     try:
-        # Use config default if not specified
+        # Use config defaults if not specified
         if limit is None:
             limit = config.RETRIEVAL_LIMIT
+        if distance_threshold is None:
+            distance_threshold = config.DISTANCE_THRESHOLD
         
         logger.info(f"Starting retrieval for job description ({len(job_description)} chars)")
         
@@ -142,7 +144,7 @@ def retrieve_relevant_chunks(
                     )
                     retrieval_results.append(result_obj)
         else:
-            # SQLite - retrieve all embeddings and compute distance in Python
+            # SQLite - retrieve all embeddings and compute similarity in Python
             base_query = """
             SELECT 
                 rc.id as chunk_id,
@@ -172,9 +174,13 @@ def retrieve_relevant_chunks(
                 logger.warning("No chunks found matching the query")
                 return []
             
-            # Compute distances in Python for SQLite
+            # Parse all embeddings and compute similarity vectorized
             retrieval_results = []
             jd_embedding_np = np.array(jd_embedding)
+            
+            # Collect all embeddings and metadata
+            chunk_embeddings = []
+            chunk_metadata = []
             
             for row in rows:
                 try:
@@ -184,25 +190,61 @@ def retrieve_relevant_chunks(
                     else:
                         chunk_embedding = np.array(row.embedding)
                     
-                    # Compute cosine distance
-                    distance = float(np.linalg.norm(jd_embedding_np - chunk_embedding))
-                    
-                    if distance <= distance_threshold:
-                        result_obj = RetrievalResult(
-                            chunk_id=row.chunk_id,
-                            resume_id=row.resume_id,
-                            chunk_text=row.chunk_text,
-                            distance=distance,
-                            metadata={
-                                "created_at": None  # Resume created_at, not chunk created_at  
-                            }
-                        )
-                        retrieval_results.append(result_obj)
+                    chunk_embeddings.append(chunk_embedding)
+                    chunk_metadata.append({
+                        'chunk_id': row.chunk_id,
+                        'resume_id': row.resume_id,
+                        'chunk_text': row.chunk_text
+                    })
                 except Exception as e:
                     logger.warning(f"Failed to process chunk {row.chunk_id}: {e}")
                     continue
             
-            # Sort by distance and limit results
+            if not chunk_embeddings:
+                logger.warning("No valid embeddings found")
+                return []
+            
+            # Vectorized similarity computation
+            chunk_embeddings_matrix = np.vstack(chunk_embeddings)
+            
+            # Choose similarity metric from config
+            similarity_metric = config.SIMILARITY_METRIC.lower()
+            
+            if similarity_metric == "cosine":
+                # Cosine similarity: dot product of normalized vectors
+                # Since embeddings are already normalized, this is just dot product
+                similarities = np.dot(chunk_embeddings_matrix, jd_embedding_np)
+                # Convert to distance (1 - similarity) for consistency
+                distances = 1.0 - similarities
+            elif similarity_metric == "euclidean":
+                # Euclidean distance
+                distances = np.linalg.norm(chunk_embeddings_matrix - jd_embedding_np, axis=1)
+            elif similarity_metric == "dot_product":
+                # Negative dot product to use as distance (higher dot product = lower distance)
+                similarities = np.dot(chunk_embeddings_matrix, jd_embedding_np)
+                distances = -similarities
+            else:
+                logger.warning(f"Unknown similarity metric '{similarity_metric}', defaulting to cosine")
+                similarities = np.dot(chunk_embeddings_matrix, jd_embedding_np)
+                distances = 1.0 - similarities
+            
+            # Create results for chunks within threshold
+            for i, distance in enumerate(distances):
+                if distance <= distance_threshold:
+                    metadata = chunk_metadata[i]
+                    result_obj = RetrievalResult(
+                        chunk_id=metadata['chunk_id'],
+                        resume_id=metadata['resume_id'],
+                        chunk_text=metadata['chunk_text'],
+                        distance=float(distance),
+                        metadata={
+                            "created_at": None,
+                            "similarity_metric": similarity_metric
+                        }
+                    )
+                    retrieval_results.append(result_obj)
+            
+            # Sort by distance (ascending) and limit results
             retrieval_results.sort(key=lambda x: x.distance)
             retrieval_results = retrieval_results[:limit]
         

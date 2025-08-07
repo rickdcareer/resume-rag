@@ -143,9 +143,12 @@ class ResumeGenerator:
             # Parse the bullets and citations
             bullets, cited_chunks = self._parse_generated_response(generated_text, chunks)
             
+            # Deduplicate cited chunks to avoid repetition in output
+            unique_cited_chunks = list(dict.fromkeys(cited_chunks))  # Preserves order while removing duplicates
+            
             result = GenerationResult(
                 tailored_bullets=bullets,
-                cited_chunks=cited_chunks,
+                cited_chunks=unique_cited_chunks,
                 original_chunk_count=len(chunks),
                 metadata={
                     "model": self.model,
@@ -156,7 +159,7 @@ class ResumeGenerator:
                 }
             )
             
-            logger.info(f"✅ Generated {len(bullets)} bullets citing {len(set(cited_chunks))} chunks")
+            logger.info(f"✅ Generated {len(bullets)} bullets citing {len(unique_cited_chunks)} unique chunks (from {len(cited_chunks)} total citations)")
             return result
             
         except Exception as e:

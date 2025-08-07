@@ -74,6 +74,10 @@ temp/
 *.tmp
 *.temp
 
+# Git diff utility temporary files
+temp_*.txt
+temp_git_review.txt
+
 # Secrets and API keys
 secrets/
 *.key

@@ -282,17 +282,47 @@ def wait_for_api():
     
     for i in range(60):  # Wait up to 60 seconds
         try:
+            print(f"🔍 Attempt {i+1}: Testing http://localhost:8000/health")
             response = requests.get("http://localhost:8000/health", timeout=5)
+            print(f"   Response status: {response.status_code}")
             if response.status_code == 200:
                 print("✅ API is ready")
                 return True
-        except:
-            pass
+            else:
+                print(f"   Response text: {response.text[:200]}")
+        except requests.exceptions.ConnectionError as e:
+            print(f"   Connection error: {e}")
+        except requests.exceptions.Timeout as e:
+            print(f"   Timeout error: {e}")
+        except Exception as e:
+            print(f"   Other error: {e}")
+        
+        # Check container status every 5 attempts
+        if i % 5 == 4:
+            print(f"🔍 Checking container status (attempt {i+1})...")
+            container_result = run_wsl_podman_command("podman ps | grep resume-api", check=False)
+            if container_result and container_result.stdout:
+                print(f"   Container status: {container_result.stdout.strip()}")
+            else:
+                print("   ❌ Container not found or not running!")
+            
+            # Check container logs
+            print("🔍 Checking container logs...")
+            log_result = run_wsl_podman_command("podman logs --tail 10 resume-api", check=False)
+            if log_result and log_result.stdout:
+                print(f"   Recent logs: {log_result.stdout.strip()}")
+            else:
+                print("   ❌ No logs available!")
+        
         time.sleep(1)
         if i % 10 == 9:  # Print every 10 seconds
             print(f"   Still waiting... ({i+1}/60)")
     
     print("❌ API failed to start in time")
+    print("🔍 Final container check...")
+    run_wsl_podman_command("podman ps -a | grep resume-api", check=False)
+    print("🔍 Final log check...")
+    run_wsl_podman_command("podman logs --tail 20 resume-api", check=False)
     return False
 
 def run_smoke_test():

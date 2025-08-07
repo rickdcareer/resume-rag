@@ -16,6 +16,10 @@
     "chunk_max_words": 200,
     "retrieval_limit": 12
   },
+  "retrieval": {
+    "similarity_metric": "cosine",
+    "distance_threshold": 0.5
+  },
   "api": {
     "host": "127.0.0.1",
     "port": 8000,

@@ -44,6 +44,18 @@ podman run -d --name resume-api \
 - **OpenAI API Key** (for GPT-4o) - copy `env.example` to `.env` and add your key
 - **Python 3.11+** (for building/running)
 
+### Known Issues & Troubleshooting
+
+⚠️ **WSL Networking**: If API fails to respond from Windows but works in WSL, restart WSL:
+```bash
+wsl --shutdown
+python start.py  # Restart API
+```
+
+⚠️ **httpx Compatibility**: If you get "proxies" error with OpenAI client, the container needs httpx downgrade (automatically handled in our image).
+
+📖 **Full troubleshooting guide**: See [docs/development-troubleshooting.md](docs/development-troubleshooting.md)
+
 ## 🌐 API Endpoints
 
 ### Health Check
